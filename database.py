@@ -122,6 +122,46 @@ def delete_record(table_name, column, value):
     db.commit()
     return redirect(url_for('view_table', table_name=table_name))
 
+@app.route('/update/<table_name>/<column>/<value>', methods=['GET', 'POST'])
+def update_record(table_name, column, value):
+    """
+    Update a specific record in the specified table.
+    """
+    db = get_db()
+    cursor = db.cursor()
+
+    if request.method == 'POST':
+        # Get the updated data from the form
+        updated_data = {key: request.form[key] for key in request.form.keys()}
+
+        # Prepare the UPDATE query
+        set_clause = ", ".join([f"{key} = ?" for key in updated_data.keys()])
+        query = f"UPDATE {table_name} SET {set_clause} WHERE {column} = ?"
+        values = list(updated_data.values()) + [value]
+
+        try:
+            cursor.execute(query, values)
+            db.commit()
+            return redirect(url_for('view_table', table_name=table_name))
+        except sqlite3.OperationalError as e:
+            return jsonify({"error": str(e)}), 400
+
+    # For GET: Fetch the existing record
+    try:
+        query = f"SELECT * FROM {table_name} WHERE {column} = ?"
+        cursor.execute(query, (value,))
+        record = cursor.fetchone()
+        if not record:
+            return jsonify({"error": "Record not found"}), 404
+
+        # Get column names for the table
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [col[1] for col in cursor.fetchall()]
+        return render_template('update.html', table_name=table_name, record=record, columns=columns)
+    except sqlite3.OperationalError as e:
+        return jsonify({"error": str(e)}), 400
+
+
 # Run the Flask application
 if __name__ == '__main__':
     app.run(debug=True)
