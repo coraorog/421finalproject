@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Query Plants Ordered</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <a href="/" class="home-button">Home</a>
+</head>
+<body>
+    <h1>Retrieve Plants Ordered by a Customer</h1>
+    <form method="POST">
+        <label for="customer_id">Enter Customer ID:</label>
+        <input type="number" id="customer_id" name="customer_id" required>
+        <button type="submit">Search</button>
+    </form>
+
+    {% if plants %}
+        <h2>Results:</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Plant Name</th>
+                    <th>Quantity</th>
+                    <th>Order Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plant in plants %}
+                    <tr>
+                        <td>{{ plant['PlantName'] }}</td>
+                        <td>{{ plant['quantity'] }}</td>
+                        <td>{{ plant['OrderDate'] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif request.method == 'POST' %}
+        <p>No plants found for this customer.</p>
+    {% endif %}
+</body>
+</html>

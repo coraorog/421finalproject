@@ -59,8 +59,30 @@ def view_table(table_name):
         return render_template('view.html', table_name=table_name, records=rows, columns=columns)
     except sqlite3.OperationalError as e:
         return jsonify({"error": f"Could not access table '{table_name}': {str(e)}"}), 400
+    
+@app.route('/query_plants', methods=['GET', 'POST'])
+def query_plants():
+    db = get_db()
+    cursor = db.cursor()
 
-# Route: Add a new record (form view and processing)
+    plants = []
+
+    if request.method == 'POST':
+        customer_id = request.form.get('customer_id')
+        if customer_id:
+            query = """
+            SELECT P.name AS PlantName, OD.quantity, O.OrderDate
+            FROM PLANTS P
+            JOIN ORDER_DETAILS OD ON P.pid = OD.pid
+            JOIN ORDERS O ON OD.oid = O.oid
+            WHERE O.cid = ?
+            """
+            cursor.execute(query, (customer_id,))
+            plants = cursor.fetchall()
+
+    return render_template('query_plants.html', plants=plants)
+
+
 @app.route('/add/<table_name>', methods=['GET', 'POST'])
 def add_record(table_name):
     """
@@ -73,25 +95,14 @@ def add_record(table_name):
         # Get form data
         data = {key: value for key, value in request.form.items()}
 
-        if table_name == 'orders':
-            # Quality check logic for 'order' table entries
-            order_id = data.get('oid') 
-            if not order_id:
-                return "Error: Missing 'Order ID' field in the form data.", 400
-            
-            # Fetch the quantity of the specified plant
-            cursor.execute("SELECT quantity FROM plants WHERE pid = ?", (order_id,))
-            plant_row = cursor.fetchone()
-            
-            if not plant_row:
-                return f"Error: Plant with ID {order_id} does not exist.", 404
-            
-            plant_quantity = plant_row[2]
-            
-            # Check if the plant meets the quality criteria
-            if plant_quantity <= 0:
-                return f"Error: (Plant is out of stock).", 400
-            
+        # Validate quantity if it's in the form data
+        if 'quantity' in data:
+            try:
+                quantity = int(data['quantity'])
+                if quantity < 0:
+                    return "Error: Quantity cannot be a negative number.", 400
+            except ValueError:
+                return "Error: Quantity must be a valid number.", 400
 
         # Prepare INSERT query
         placeholders = ", ".join(["?"] * len(data))
@@ -106,6 +117,7 @@ def add_record(table_name):
     cursor.execute(f"PRAGMA table_info({table_name})")
     columns = [col[1] for col in cursor.fetchall()]
     return render_template('add.html', table_name=table_name, columns=columns)
+
 
 # Route: Delete a record
 @app.route('/delete/<table_name>/<column>/<value>', methods=['POST'])
