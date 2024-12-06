@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Records</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Records in {{ table_name }}</h1>
+    <table>
+        <thead>
+            <tr>
+                {% for column in columns %}
+                <th>{{ column }}</th>
+                {% endfor %}
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                {% for column in columns %}
+                <td>{{ record[column] }}</td>
+                {% endfor %}
+                <td>
+                    <!-- Delete button -->
+                    <form action="/delete/{{ table_name }}/{{ columns[0] }}/{{ record[columns[0]] }}" method="post" style="display:inline;">
+                        <button type="submit">Delete</button>
+                    </form>
+                    <!-- Update button -->
+                    <a href="/update/{{ table_name }}/{{ columns[0] }}/{{ record[columns[0]] }}" class="button">Update</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="/add/{{ table_name }}" class="button">Add Record</a>
+</body>
+</html>
