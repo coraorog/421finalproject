@@ -73,7 +73,7 @@ def add_record(table_name):
         # Get form data
         data = {key: value for key, value in request.form.items()}
 
-        if table_name == 'order':
+        if table_name == 'orders':
             # Quality check logic for 'order' table entries
             order_id = data.get('oid') 
             if not order_id:
